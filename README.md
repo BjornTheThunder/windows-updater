@@ -9,10 +9,10 @@ Run this command in the terminal to run the script directly without downloading 
 
 This command execute a simple scan for updates:
 ```PowerShell
-irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 | ie
+irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 | iex
 ```
 
 Add the -Install parameter to also apply the updates:
 ```PowerShell
-irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 -Install | ie
+irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 -Install | iex
 ```
