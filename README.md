@@ -12,7 +12,7 @@ This command execute a simple scan for updates:
 irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 | iex
 ```
 
-Add the -Install parameter to also apply the updates:
+Add the -Install parameter to also apply the updates (the Administrator elevation doesn't work for now, so execute it from an already elevated terminal):
 ```PowerShell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1))) -Install
 ```
