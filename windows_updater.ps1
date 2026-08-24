@@ -53,20 +53,21 @@ $principal = [Security.Principal.WindowsPrincipal]$identity
 $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if ($Install -and -not $isAdmin) {
-    Write-Log "Re-launching script with Administrator privileges..." -Type Warning
-    $boundArgs = $PSBoundParameters.Keys | ForEach-Object { "-$_" }
-    $argsToPass = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`"") + $boundArgs
-    Start-Process powershell.exe -Verb RunAs -ArgumentList ($argsToPass -join ' ')
-    exit
+    if ([string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        Write-Host " [!] Administrator privileges are required when using -Install." -ForegroundColor Red
+        Write-Host " [!] Please re-open PowerShell AS ADMINISTRATOR and run the command again." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Press any key to exit..." -ForegroundColor Yellow
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        exit
+    } else {
+        Write-Log "Re-launching script with Administrator privileges..." -Type Warning
+        $boundArgs = $PSBoundParameters.Keys | ForEach-Object { "-$_" }
+        $argsToPass = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`"") + $boundArgs
+        Start-Process powershell.exe -Verb RunAs -ArgumentList ($argsToPass -join ' ')
+        exit
+    }
 }
-
-$updateResults = [System.Collections.Generic.List[PSCustomObject]]::new()
-$activityTitle = "Windows Multi-Manager Update and Inventory"
-$totalSteps = 6
-
-Write-Header "WINDOWS MULTI-MANAGER UPDATE AND INVENTORY"
-Write-Log "Scan Started : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -Type Info
-Write-Log "Run Mode     : $(if ($Install) { 'Scan & Automated Installation' } else { 'Audit / Scan Only (-Install to execute upgrades)' })" -Type $(if ($Install) { 'Warning' } else { 'Info' })
 
 # ------------------------------------------------------------------------------
 # 1. WINDOWS UPDATES (COM API)
