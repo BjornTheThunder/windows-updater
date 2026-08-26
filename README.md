@@ -2,17 +2,12 @@
 Simple CLI utility written in PowerShell to update Windows and the various programs
 
 ## Disclaimer
-Still a work in progress and the update process need to be tested more to be sure they work.
+Still a work in progress and the update process need to be tested more, to be sure they work.
 
 ## How to use
-Run this command in the terminal to run the script directly without downloading it from GitHub.
+Run the terminal as Administrator then run the command below, because there is some bug (that i still need to fix) that prevent the elevation to Admin.
 
-This command execute a simple scan for updates:
+Run this command in the terminal to run the script directly without downloading it from GitHub:
 ```PowerShell
 irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1 | iex
-```
-
-Add the -Install parameter to also apply the updates (the Administrator elevation doesn't work for now, so execute it from an already elevated terminal):
-```PowerShell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1))) -Install
 ```
