@@ -73,7 +73,6 @@ if (-not $isAdmin) {
     Write-Log "Administrative privileges required. Requesting elevation..." -Type Warning
 
     # Define the URL where this script is hosted so it can re-call itself in-memory
-    # IMPORTANT: Replace this with your actual GitHub RAW link!
     $ScriptUrl = "https://raw.githubusercontent.com/BjornTheThunder/windows-updater/refs/heads/main/windows_updater.ps1"
 
     # Reconstruct any passed parameters (-Install, -Detailed, -ExportCSV)
@@ -89,14 +88,6 @@ if (-not $isAdmin) {
     $paramsString = $paramList -join ' '
     
     if ([string]::IsNullOrWhiteSpace($PSCommandPath)) {
-        # 1. RUNNING IN-MEMORY (irm | iex)
-        if ([string]::IsNullOrWhiteSpace($ScriptUrl) -or $ScriptUrl -eq "https://raw.githubusercontent.com/YourUsername/YourRepo/main/YourScript.ps1") {
-            Write-Log "Running in-memory, but `$ScriptUrl is not set. Cannot auto-elevate." -Type Error
-            Write-Host "Press any key to exit..." -ForegroundColor Yellow
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-            return 
-        }
-
         Write-Log "Re-launching script from web in an Elevated prompt..." -Type Info
         # Convert the web response directly into a scriptblock so we can pass arguments to it
         $elevateCmd = "& ([scriptblock]::Create((Invoke-RestMethod '$ScriptUrl'))) $paramsString"
