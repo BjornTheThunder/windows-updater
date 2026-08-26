@@ -82,16 +82,20 @@ if (-not $isAdmin) {
             $paramList += "-$key `"$val`""
         }
     }
-
+    
     if ([string]::IsNullOrWhiteSpace($PSCommandPath)) {
-        # If running in-memory, we can't easily elevate and resume.
-        Write-Log "Running in-memory. Please open an Administrator PowerShell and run the script again." -Type Error
-        exit
+        # If running in-memory (irm | iex), we use 'return' instead of 'exit' 
+        # to prevent the PowerShell terminal from force-closing.
+        Write-Log "Running in-memory. Please open an Administrator PowerShell and run the command again." -Type Error
+        Write-Host ""
+        Write-Host "Press any key to stop execution..." -ForegroundColor Yellow
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        return 
     } else {
         # Relaunch local file path in elevated process
         $argsToPass = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`"") + $paramList
         Start-Process powershell.exe -Verb RunAs -ArgumentList ($argsToPass -join ' ')
-        exit
+        return 
     }
 }
 
