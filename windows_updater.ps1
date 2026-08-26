@@ -370,27 +370,56 @@ if ($shouldInstall) {
         try {
             Write-Log "Preparing $($pendingWinUpdates.Count) Windows update(s) for installation..." -Type Warning
 
-            # Must wrap array in a COM UpdateCollection for download/install methods
-            $updatesCollection = New-Object -ComObject Microsoft.Update.UpdateColl
+            $updatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
             foreach ($update in $pendingWinUpdates) {
                 if (-not $update.EulaAccepted) { $update.AcceptEula() }
-                $updatesCollection.Add($update) | Out-Null
+                $updatesToDownload.Add($update) | Out-Null
             }
 
-            Write-Progress -Activity "Downloading Windows Updates" -Status "Progressing download..." -PercentComplete 50 -Id 1
+            Write-Log "Downloading Windows updates..." -Type Info
+            Write-Progress -Activity "Downloading Windows Updates" -Status "Downloading..." -PercentComplete 30 -Id 1
             $downloader = $updateSession.CreateUpdateDownloader()
-            $downloader.Updates = $updatesCollection
-            $downloader.Download()
+            $downloader.Updates = $updatesToDownload
+            $downloadResult = $downloader.Download()
             Write-Progress -Activity "Downloading Windows Updates" -Completed -Id 1
 
-            Write-Log "Installing Windows updates..." -Type Warning
-            Write-Progress -Activity "Installing Windows Updates" -Status "Applying updates..." -PercentComplete 75 -Id 1
-            $installer = $updateSession.CreateUpdateInstaller()
-            $installer.Updates = $updatesCollection
-            $installResult = $installer.Install()
-            Write-Progress -Activity "Installing Windows Updates" -Completed -Id 1
+            # Filter for updates that were successfully downloaded
+            $updatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
+            for ($i = 0; $i -lt $updatesToDownload.Count; $i++) {
+                $item = $updatesToDownload.Item($i)
+                if ($item.IsDownloaded) {
+                    $updatesToInstall.Add($item) | Out-Null
+                } else {
+                    Write-Log "Skipping update (Download Failed/Incomplete): $($item.Title)" -Type Warning
+                }
+            }
 
-            Write-Log "Windows Update completed with Result Code: $($installResult.ResultCode)" -Type Success
+            if ($updatesToInstall.Count -gt 0) {
+                Write-Log "Installing $($updatesToInstall.Count) verified update(s)..." -Type Warning
+                Write-Progress -Activity "Installing Windows Updates" -Status "Applying updates..." -PercentComplete 75 -Id 1
+                $installer = $updateSession.CreateUpdateInstaller()
+                $installer.Updates = $updatesToInstall
+                $installResult = $installer.Install()
+                Write-Progress -Activity "Installing Windows Updates" -Completed -Id 1
+
+                switch ($installResult.ResultCode) {
+                    2 { Write-Log "Windows Updates installed successfully." -Type Success }
+                    3 { Write-Log "Windows Updates completed with partial warnings (Code 3)." -Type Warning }
+                    4 { 
+                        Write-Log "Windows Update installation failed (Result Code 4)." -Type Error
+                        for ($i = 0; $i -lt $updatesToInstall.Count; $i++) {
+                            $res = $installResult.GetUpdateResult($i)
+                            if ($res.ResultCode -ne 2) {
+                                $hresultHex = "0x{0:X8}" -f $res.HResult
+                                Write-Log "Failed Item: $($updatesToInstall.Item($i).Title) [HResult: $hresultHex]" -Type Error
+                            }
+                        }
+                    }
+                    Default { Write-Log "Windows Update finished with Code: $($installResult.ResultCode)" -Type Info }
+                }
+            } else {
+                Write-Log "No updates were successfully downloaded for installation." -Type Error
+            }
         } catch {
             Write-Log "Error installing Windows Updates: $($_.Exception.Message)" -Type Error
         }
